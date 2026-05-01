@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocean Landscape</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="oceanCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('oceanCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const waterLevel = canvas.height / 2;
+
+        // Animation variables
+        let waveOffset = 0;
+        let time = 0;
+
+        // Particle system for bubbles
+        const bubbles = [];
+        class Bubble {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height;
+                this.radius = Math.random() * 3 + 1;
+                this.speedY = -(Math.random() * 1 + 0.5);
+                this.speedX = Math.sin(time * 0.01) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.3;
+            }
+
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                if (this.y < waterLevel) {
+                    this.opacity -= 0.01;
+                }
+            }
+
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.strokeStyle = 'rgba(200, 230, 255, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        // Create initial bubbles
+        for (let i = 0; i < 20; i++) {
+            bubbles.push(new Bubble());
+        }
+
+        // Draw sky gradient
+        function drawSky() {
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, waterLevel);
+            skyGradient.addColorStop(0, '#87CEEB');    // Light blue
+            skyGradient.addColorStop(0.5, '#E0F6FF'); // Very light blue
+            skyGradient.addColorStop(1, '#B0E0E6');    // Powder blue
+
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, waterLevel);
+
+            // Draw clouds
+            drawClouds();
+        }
+
+        // Draw clouds
+        function drawClouds() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            
+            // Cloud 1
+            drawCloud(150 + Math.sin(time * 0.0005) * 30, 80, 60);
+            
+            // Cloud 2
+            drawCloud(canvas.width - 200 + Math.sin(time * 0.0007) * 20, 120, 80);
+            
+            // Cloud 3
+            drawCloud(canvas.width / 2 + Math.sin(time * 0.0003) * 40, 60, 70);
+        }
+
+        // Helper function to draw a cloud
+        function drawCloud(x, y, size) {
+            ctx.beginPath();
+            ctx.arc(x, y, size, Math.PI * 0.5, Math.PI * 1.5);
+            ctx.arc(x + size * 0.6, y - size * 0.5, size * 0.7, Math.PI * 1.2, Math.PI * 0.3);
+            ctx.arc(x + size * 1.2, y, size * 0.6, Math.PI * 1.5, Math.PI * 0.5);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Draw water surface with waves
+        function drawWater() {
+            ctx.fillStyle = '#1E90FF';
+            ctx.fillRect(0, waterLevel, canvas.width, canvas.height - waterLevel);
+
+            // Draw water gradient
+            const waterGradient = ctx.createLinearGradient(0, waterLevel, 0, canvas.height);
+            waterGradient.addColorStop(0, 'rgba(30, 144, 255, 0.8)');    // Deeper blue
+            waterGradient.addColorStop(0.3, 'rgba(25, 100, 200, 0.85)');
+            waterGradient.addColorStop(1, 'rgba(10, 50, 150, 0.9)');     // Very deep blue
+
+            ctx.fillStyle = waterGradient;
+            ctx.fillRect(0, waterLevel, canvas.width, canvas.height - waterLevel);
+
+            // Draw waves
+            drawWaves();
+        }
+
+        // Draw animated waves
+        function drawWaves() {
+            ctx.strokeStyle = 'rgba(100, 180, 255, 0.6)';
+            ctx.lineWidth = 2;
+
+            for (let waveLayer = 0; waveLayer < 3; waveLayer++) {
+                ctx.beginPath();
+                
+                const waveHeight = 15 - waveLayer * 3;
+                const waveFrequency = 0.01 - waveLayer * 0.002;
+                const waveSpeed = 0.03 + waveLayer * 0.01;
+
+                for (let x = 0; x <= canvas.width; x += 10) {
+                    const y = waterLevel + Math.sin(x * waveFrequency + time * waveSpeed) * waveHeight;
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // Surface reflection/shimmer
+            ctx.strokeStyle = 'rgba(150, 200, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width; x += 15) {
+                const y = waterLevel + Math.sin(x * 0.02 + time * 0.02) * 3;
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        }
+
+        // Draw underwater elements
+        function drawUnderwater() {
+            // Sand/seabed
+            ctx.fillStyle = '#D4A574';
+            ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+
+            // Seaweed
+            drawSeaweed(150, canvas.height - 80, 60, time);
+            drawSeaweed(400, canvas.height - 80, 70, time);
+            drawSeaweed(canvas.width - 300, canvas.height - 80, 65, time);
+            drawSeaweed(canvas.width - 100, canvas.height - 80, 55, time);
+
+            // Fish
+            drawFish(200, 200 + Math.sin(time * 0.005) * 30, 20, time);
+            drawFish(canvas.width - 250, 150 + Math.sin(time * 0.004 + 1) * 40, -15, time);
+            drawFish(canvas.width / 2, 180 + Math.sin(time * 0.006 + 2) * 25, 18, time);
+
+            // Coral
+            drawCoral(500, canvas.height - 100, 30, '#FF6B6B');
+            drawCoral(canvas.width - 200, canvas.height - 90, 25, '#FF8C8C');
+
+            // Rocks/stones
+            drawRock(300, canvas.height - 85, 25, '#808080');
+            drawRock(canvas.width - 400, canvas.height - 75, 30, '#696969');
+        }
+
+        // Draw seaweed
+        function drawSeaweed(x, y, height, time) {
+            ctx.strokeStyle = '#228B22';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+
+            const waveAmount = Math.sin(time * 0.008) * 15;
+            for (let i = 0; i < height; i += 5) {
+                const offsetX = Math.sin(i * 0.05 + time * 0.01) * (8 + waveAmount);
+                ctx.lineTo(x + offsetX, y - i);
+            }
+            ctx.stroke();
+        }
+
+        // Draw coral
+        function drawCoral(x, y, size, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size * 0.5, y - size);
+            ctx.lineTo(x - size * 0.3, y - size * 1.5);
+            ctx.lineTo(x, y - size * 1.8);
+            ctx.lineTo(x + size * 0.3, y - size * 1.5);
+            ctx.lineTo(x + size * 0.5, y - size);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        // Draw rock
+        function drawRock(x, y, radius, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Draw simple fish
+        function drawFish(x, y, size, time) {
+            const tailWag = Math.sin(time * 0.02) * 5;
+            const direction = size > 0 ? 1 : -1;
+
+            // Body
+            ctx.fillStyle = '#FF6347';
+            ctx.beginPath();
+            ctx.ellipse(x, y, Math.abs(size) * 1.2, Math.abs(size) * 0.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Tail
+            ctx.fillStyle = '#FF4500';
+            ctx.beginPath();
+            ctx.moveTo(x + Math.abs(size) * 1.2 * direction, y);
+            ctx.lineTo(x + Math.abs(size) * 2.2 * direction, y + tailWag);
+            ctx.lineTo(x + Math.abs(size) * 1.8 * direction, y - tailWag);
+            ctx.closePath();
+            ctx.fill();
+
+            // Eye
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(x - Math.abs(size) * 0.5 * direction, y - Math.abs(size) * 0.3, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(x - Math.abs(size) * 0.5 * direction, y - Math.abs(size) * 0.3, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Update bubbles
+        function updateBubbles() {
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                bubbles[i].update();
+                bubbles[i].draw();
+
+                if (bubbles[i].opacity <= 0 || bubbles[i].y < 0) {
+                    bubbles.splice(i, 1);
+                }
+            }
+
+            // Add new bubbles
+            if (Math.random() < 0.1) {
+                bubbles.push(new Bubble());
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            time++;
+
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw scenes
+            drawSky();
+            drawWater();
+            drawUnderwater();
+            updateBubbles();
+
+            // Continue animation
+            requestAnimationFrame(animate);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Start animation
+        animate();
+    </script>
+</body>
+</html>
